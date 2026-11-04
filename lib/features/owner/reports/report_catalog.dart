@@ -154,8 +154,13 @@ List<ReportRow> reportRows(String id, CrmState state) {
         ReportRow('Difference', state.cashDifference == null ? '—' : inr(state.cashDifference!)),
       ];
     case 'cash-diff':
-      if (state.cashDifference == null) return [const ReportRow('No counted day yet', 'Close the day to record a difference')];
-      return [ReportRow(fullDate(shopNow()), inr(state.cashDifference!))];
+      final closes = [
+        if (state.cashDifference != null) ReportRow(fullDate(shopNow()), inr(state.cashDifference!), 'Counted ${inr(state.countedCash!)}'),
+        for (final close in state.desk.pastCloses)
+          ReportRow(fullDate(close.at), inr(close.difference), 'Counted ${inr(close.counted)} · expected ${inr(close.expected)}'),
+      ];
+      if (closes.isEmpty) return [const ReportRow('No counted day yet', 'Close the day to record a difference')];
+      return closes;
     case 'expenses':
       final map = <String, double>{};
       for (final entry in state.cashEntries.where((e) => e.kind == CashKind.cashOut)) {

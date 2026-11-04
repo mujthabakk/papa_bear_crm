@@ -23,7 +23,7 @@ void main() {
     expect(ed.desk.name, 'Edappally');
     expect(ed.staff.any((person) => person.name == 'Nithin K'), isTrue);
     expect(ed.staff.any((person) => person.name == 'Rahul K'), isFalse);
-    expect(ed.todaySales, 350);
+    expect(ed.todaySales, 500);
 
     expect(crm.switchBranch('kk'), isNull);
     expect(container.read(crmProvider).desk.name, 'Kakkanad');

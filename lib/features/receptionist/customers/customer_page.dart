@@ -40,6 +40,10 @@ class CustomerPage extends ConsumerWidget {
             ),
           ],
         ),
+        if (customer.notes != null && customer.notes!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(customer.notes!, style: PbText.body(14, color: PbColors.inkSoft)),
+        ],
         const SizedBox(height: 16),
         Text('Visit history', style: PbText.display(22)),
         const SizedBox(height: 8),

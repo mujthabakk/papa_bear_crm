@@ -566,6 +566,16 @@ class ShopNotification {
   }
 }
 
+class DayCloseSnapshot {
+  const DayCloseSnapshot({required this.at, required this.expected, required this.counted});
+
+  final DateTime at;
+  final double expected;
+  final double counted;
+
+  double get difference => counted - expected;
+}
+
 class BranchDesk {
   const BranchDesk({
     required this.id,
@@ -586,6 +596,7 @@ class BranchDesk {
     required this.salaries,
     required this.overrides,
     required this.attendanceEdits,
+    this.pastCloses = const [],
     required this.openingCash,
     required this.countedCash,
     required this.dayClosed,
@@ -610,6 +621,7 @@ class BranchDesk {
   final List<SalaryDraft> salaries;
   final List<ClashOverride> overrides;
   final Map<String, AttendanceMark> attendanceEdits;
+  final List<DayCloseSnapshot> pastCloses;
   final double openingCash;
   final double? countedCash;
   final bool dayClosed;
@@ -633,6 +645,7 @@ class BranchDesk {
     List<SalaryDraft>? salaries,
     List<ClashOverride>? overrides,
     Map<String, AttendanceMark>? attendanceEdits,
+    List<DayCloseSnapshot>? pastCloses,
     double? openingCash,
     Object? countedCash = _keep,
     bool? dayClosed,
@@ -657,6 +670,7 @@ class BranchDesk {
       salaries: salaries ?? this.salaries,
       overrides: overrides ?? this.overrides,
       attendanceEdits: attendanceEdits ?? this.attendanceEdits,
+      pastCloses: pastCloses ?? this.pastCloses,
       openingCash: openingCash ?? this.openingCash,
       countedCash: identical(countedCash, _keep) ? this.countedCash : countedCash as double?,
       dayClosed: dayClosed ?? this.dayClosed,
