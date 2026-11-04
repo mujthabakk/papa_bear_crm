@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:papa_bear_crm/core/navigation/role_path.dart';
 import 'package:papa_bear_crm/core/format/pb_format.dart';
 import 'package:papa_bear_crm/core/theme/pb_colors.dart';
 import 'package:papa_bear_crm/core/theme/pb_theme.dart';
 import 'package:papa_bear_crm/core/widgets/pb_controls.dart';
-import 'package:papa_bear_crm/core/widgets/pb_modal.dart';
-import 'package:papa_bear_crm/core/widgets/pb_toast.dart';
 import 'package:papa_bear_crm/data/mock/crm_controller.dart';
-import 'package:papa_bear_crm/features/receptionist/billing/bill_modal.dart';
 import 'package:papa_bear_crm/features/receptionist/bookings/availability_modal.dart';
 
 class BookingsPage extends ConsumerWidget {
@@ -90,13 +89,13 @@ class BookingsPage extends ConsumerWidget {
   }
 }
 
-class _BookingCard extends ConsumerWidget {
+class _BookingCard extends StatelessWidget {
   const _BookingCard({required this.booking});
 
   final Booking booking;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final color = switch (booking.status) {
       BookingStatus.upcoming => PbColors.cream,
       BookingStatus.arrived => PbColors.mossSoft,
@@ -109,7 +108,7 @@ class _BookingCard extends ConsumerWidget {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => _open(context, ref),
+        onTap: () => context.go(rolePath(context, '/bookings/${booking.id}')),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -128,62 +127,6 @@ class _BookingCard extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _open(BuildContext context, WidgetRef ref) {
-    showPbModal<void>(
-      context: context,
-      kicker: booking.source.label,
-      title: booking.customerName,
-      subtitle: '${booking.serviceName} · ${clock(booking.start)} to ${clock(booking.end)}',
-      child: FormBody(
-        footer: ModalFooter(
-          children: [
-            if (booking.status == BookingStatus.upcoming)
-              PbButton(
-                label: 'No-show',
-                primary: false,
-                onPressed: () {
-                  ref.read(crmProvider.notifier).setBookingStatus(booking.id, BookingStatus.noShow);
-                  Navigator.pop(context);
-                },
-              ),
-            if (booking.status == BookingStatus.upcoming || booking.status == BookingStatus.arrived)
-              PbButton(
-                label: booking.status == BookingStatus.arrived ? 'Take payment' : 'Mark arrived',
-                onPressed: () {
-                  if (booking.status == BookingStatus.upcoming) {
-                    ref.read(crmProvider.notifier).setBookingStatus(booking.id, BookingStatus.arrived);
-                    showPbToast(context, 'Marked arrived. The slot stays held.');
-                    Navigator.pop(context);
-                    return;
-                  }
-                  final navigator = Navigator.of(context);
-                  navigator.pop();
-                  showBillModal(
-                    navigator.context,
-                    seed: BillSeed(
-                      bookingId: booking.id,
-                      name: booking.customerName,
-                      phone: booking.phone,
-                      serviceId: booking.serviceId,
-                      staffId: booking.staffId,
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
-        children: [
-          Text(booking.phone.isEmpty ? 'No phone yet' : booking.phone, style: PbText.body(15)),
-          const SizedBox(height: 8),
-          Text(
-            'Mark arrived when they reach the chair. No-show frees the time for a walk-in.',
-            style: PbText.body(13.5, color: PbColors.inkSoft),
-          ),
-        ],
       ),
     );
   }

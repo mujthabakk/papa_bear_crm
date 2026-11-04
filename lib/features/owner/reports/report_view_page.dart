@@ -21,17 +21,30 @@ class ReportViewPage extends ConsumerWidget {
     if (matches.isEmpty) return const Center(child: Text('Unknown report'));
     final report = matches.first;
     final rows = reportRows(id, state);
+    final path = GoRouterState.of(context).uri.path;
+    final back = path.contains('/today/')
+        ? '/today'
+        : path.contains('/sales/')
+            ? '/sales'
+            : path.contains('/expenses/')
+                ? '/expenses'
+                : '/reports';
+    final backLabel = switch (back) {
+      '/today' => 'Today',
+      '/sales' => 'Sales',
+      '/expenses' => 'Expenses',
+      _ => 'All reports',
+    };
+    final owner = state.session?.isOwner == true;
     return PbPage(
       kicker: report.group,
       title: report.title,
       subtitle: report.blurb,
       actions: [
         PbButton(
-          label: GoRouterState.of(context).uri.path.contains('/today/') ? 'Today' : 'All reports',
+          label: backLabel,
           primary: false,
-          onPressed: () => context.go(
-            rolePath(context, GoRouterState.of(context).uri.path.contains('/today/') ? '/today' : '/reports'),
-          ),
+          onPressed: () => context.go(rolePath(context, back)),
         ),
         PbButton(label: 'Excel', primary: false, onPressed: () => showPbToast(context, 'Excel download is wired in the next stage. The rows below are the export.')),
         PbButton(label: 'PDF', onPressed: () => showPbToast(context, 'PDF download is wired in the next stage. The rows below are the export.')),
@@ -50,6 +63,7 @@ class ReportViewPage extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: PbCard(
+              onTap: _openRow(context, row.href, owner),
               child: Row(
                 children: [
                   Expanded(
@@ -63,6 +77,10 @@ class ReportViewPage extends ConsumerWidget {
                   ),
                   const SizedBox(width: 12),
                   Flexible(child: Text(row.value, textAlign: TextAlign.right, style: PbText.body(14, weight: FontWeight.w700))),
+                  if (_openRow(context, row.href, owner) != null) ...[
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_rounded, size: 18, color: PbColors.muted),
+                  ],
                 ],
               ),
             ),
@@ -70,4 +88,10 @@ class ReportViewPage extends ConsumerWidget {
       ],
     );
   }
+}
+
+VoidCallback? _openRow(BuildContext context, String? href, bool owner) {
+  if (href == null || href.isEmpty) return null;
+  if (!owner && (href.startsWith('/staff') || href.startsWith('/salary') || href.startsWith('/profit'))) return null;
+  return () => context.go(rolePath(context, href));
 }

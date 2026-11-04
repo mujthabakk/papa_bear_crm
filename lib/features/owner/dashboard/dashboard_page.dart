@@ -37,6 +37,7 @@ class DashboardPage extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         PbCard(
+          onTap: () => context.go(rolePath(context, '/sales/payment-mode')),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -87,6 +88,7 @@ class DashboardPage extends ConsumerWidget {
             SizedBox(
               width: 320,
               child: PbCard(
+                onTap: () => context.go(rolePath(context, '/profit')),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -112,6 +114,7 @@ class DashboardPage extends ConsumerWidget {
                 label: '${member.name} · ${member.today.label}',
                 background: member.today == AttendanceMark.present ? PbColors.mossSoft : PbColors.cream,
                 foreground: member.today == AttendanceMark.present ? PbColors.moss : PbColors.inkSoft,
+                onTap: () => context.go(rolePath(context, '/staff/${member.id}')),
               ),
           ],
         ),

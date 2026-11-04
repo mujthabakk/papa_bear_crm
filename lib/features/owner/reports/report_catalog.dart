@@ -12,11 +12,25 @@ class ReportDef {
 }
 
 class ReportRow {
-  const ReportRow(this.title, this.value, [this.meta = '']);
+  const ReportRow(this.title, this.value, [this.meta = '', this.href]);
 
   final String title;
   final String value;
   final String meta;
+  final String? href;
+}
+
+String? _staffHref(CrmState state, String? name) {
+  if (name == null || name.isEmpty) return null;
+  final matches = state.staff.where((member) => member.name == name);
+  if (matches.isEmpty) return null;
+  return '/staff/${matches.first.id}';
+}
+
+String? _productHref(CrmState state, String name) {
+  final matches = state.products.where((product) => product.name == name);
+  if (matches.isEmpty) return null;
+  return '/stock/${matches.first.id}';
 }
 
 const reportCatalog = <ReportDef>[
@@ -94,7 +108,7 @@ List<ReportRow> reportRows(String id, CrmState state) {
         }
       }
       if (map.isEmpty) return [const ReportRow('No product sales this month', '—')];
-      return [for (final name in map.keys) ReportRow(name, '${map[name]} sold')];
+      return [for (final name in map.keys) ReportRow(name, '${map[name]} sold', '', _productHref(state, name))];
     case 'staff-sales':
       final map = <String, double>{};
       for (final bill in state.monthBills) {
@@ -102,7 +116,7 @@ List<ReportRow> reportRows(String id, CrmState state) {
           map[line.staffName] = (map[line.staffName] ?? 0) + line.amount;
         }
       }
-      return [for (final name in map.keys) ReportRow(name, inr(map[name]!))];
+      return [for (final name in map.keys) ReportRow(name, inr(map[name]!), '', _staffHref(state, name))];
     case 'payment-mode':
       return [
         ReportRow('Cash', inr(state.todayBills.fold(0.0, (s, b) => s + b.tender.cash))),
@@ -112,13 +126,13 @@ List<ReportRow> reportRows(String id, CrmState state) {
     case 'discounts':
       final rows = state.monthBills.where((bill) => bill.discount > 0).toList();
       if (rows.isEmpty) return [const ReportRow('No discounts this month', '—')];
-      return [for (final bill in rows) ReportRow(bill.number, inr(bill.discount), bill.customerName)];
+      return [for (final bill in rows) ReportRow(bill.number, inr(bill.discount), bill.customerName, '/bills/${bill.id}')];
     case 'pending-dues':
       final rows = state.liveBills.where((bill) => bill.balance > 1).toList();
       if (rows.isEmpty) return [const ReportRow('No pending dues', '₹0')];
-      return [for (final bill in rows) ReportRow(bill.customerName, inr(bill.balance), bill.number)];
+      return [for (final bill in rows) ReportRow(bill.customerName, inr(bill.balance), bill.number, '/bills/${bill.id}')];
     case 'today-bookings':
-      return [for (final booking in state.todayBookings) ReportRow(booking.customerName, booking.status.label, '${clock(booking.start)} · ${booking.serviceName}')];
+      return [for (final booking in state.todayBookings) ReportRow(booking.customerName, booking.status.label, '${clock(booking.start)} · ${booking.serviceName}', '/bookings/${booking.id}')];
     case 'online-vs-walkin':
       final online = state.monthBills.where((b) => b.source == BookingSource.online);
       final walk = state.monthBills.where((b) => b.source == BookingSource.walkIn);
@@ -129,7 +143,7 @@ List<ReportRow> reportRows(String id, CrmState state) {
     case 'noshow':
       final rows = state.bookings.where((b) => b.status == BookingStatus.noShow || b.status == BookingStatus.cancelled).toList();
       if (rows.isEmpty) return [const ReportRow('No no-shows recorded', '—')];
-      return [for (final booking in rows) ReportRow(booking.customerName, booking.status.label, booking.serviceName)];
+      return [for (final booking in rows) ReportRow(booking.customerName, booking.status.label, booking.serviceName, '/bookings/${booking.id}')];
     case 'clash':
       if (state.overrides.isEmpty) return [const ReportRow('No overrides yet', 'Online bookings stayed first')];
       return [for (final item in state.overrides) ReportRow(item.staffName, item.serviceName, item.reason)];
@@ -140,6 +154,7 @@ List<ReportRow> reportRows(String id, CrmState state) {
             member.name,
             '${state.todayBookings.where((b) => b.staffId == member.id).fold<int>(0, (s, b) => s + b.minutes)} min',
             'Shift ${(member.endHour - member.startHour) * 60} min',
+            '/staff/${member.id}',
           ),
       ];
     case 'cashbook':
@@ -169,17 +184,25 @@ List<ReportRow> reportRows(String id, CrmState state) {
       return [for (final key in map.keys) ReportRow(key, inr(map[key]!))];
     case 'profit':
       return [
-        ReportRow('Sales', inr(state.monthSales)),
-        ReportRow('Expenses', inr(state.monthExpenses)),
-        ReportRow('Stock purchases', inr(state.monthStockPurchases)),
-        ReportRow('Salaries paid', inr(state.monthSalariesPaid)),
-        ReportRow('Simple profit', inr(state.monthProfit)),
+        ReportRow('Sales', inr(state.monthSales), '', '/profit/sales'),
+        ReportRow('Expenses', inr(state.monthExpenses), '', '/profit/expenses'),
+        ReportRow('Stock purchases', inr(state.monthStockPurchases), '', '/profit/stock'),
+        ReportRow('Salaries paid', inr(state.monthSalariesPaid), '', '/profit/salaries'),
+        ReportRow('Simple profit', inr(state.monthProfit), '', '/profit/result'),
       ];
     case 'current-stock':
-      return [for (final product in state.products) ReportRow(product.name, '${product.qty.toStringAsFixed(0)} ${product.unit}', inr(product.stockValue))];
+      return [for (final product in state.products) ReportRow(product.name, '${product.qty.toStringAsFixed(0)} ${product.unit}', inr(product.stockValue), '/stock/${product.id}')];
     case 'stock-in':
       final rows = state.stockMoves.where((m) => m.reason == StockReason.purchase).toList();
-      return [for (final move in rows) ReportRow(state.products.where((p) => p.id == move.productId).map((p) => p.name).join(), '+${move.qty.toStringAsFixed(0)}', move.supplier ?? '')];
+      return [
+        for (final move in rows)
+          ReportRow(
+            state.products.where((p) => p.id == move.productId).map((p) => p.name).join(),
+            '+${move.qty.toStringAsFixed(0)}',
+            move.supplier ?? '',
+            '/stock/${move.productId}',
+          ),
+      ];
     case 'stock-out':
       final rows = state.stockMoves.where((m) => m.qty < 0).toList();
       return [for (final move in rows) ReportRow(move.reason.label, move.qty.toStringAsFixed(0), move.note)];
@@ -189,7 +212,7 @@ List<ReportRow> reportRows(String id, CrmState state) {
       return [for (final move in rows) ReportRow(move.note, move.qty.toStringAsFixed(0), move.reason.label)];
     case 'low-stock':
       if (state.lowStock.isEmpty) return [const ReportRow('All products are above minimum', '—')];
-      return [for (final product in state.lowStock) ReportRow(product.name, product.qty.toStringAsFixed(0), 'Order up to ${product.minimum.toStringAsFixed(0)}')];
+      return [for (final product in state.lowStock) ReportRow(product.name, product.qty.toStringAsFixed(0), 'Order up to ${product.minimum.toStringAsFixed(0)}', '/stock/${product.id}')];
     case 'stock-ledger':
       return [for (final move in state.stockMoves.take(16)) ReportRow(move.note, move.qty.toStringAsFixed(0), dayLabel(move.at))];
     case 'suppliers':
@@ -199,23 +222,23 @@ List<ReportRow> reportRows(String id, CrmState state) {
       }
       return [for (final name in map.keys) ReportRow(name, '${map[name]} entries')];
     case 'daily-attendance':
-      return [for (final member in state.activeStaff) ReportRow(member.name, member.today.label, member.late ? 'Late' : member.checkIn == null ? '' : clock(member.checkIn!))];
+      return [for (final member in state.activeStaff) ReportRow(member.name, member.today.label, member.late ? 'Late' : member.checkIn == null ? '' : clock(member.checkIn!), '/staff/${member.id}')];
     case 'monthly-attendance':
-      return [for (final slip in monthSlips) ReportRow(state.staffById(slip.staffId)?.name ?? '', '${slip.present} present', '${slip.halfDays} half · ${slip.paidLeave} paid leave')];
+      return [for (final slip in monthSlips) ReportRow(state.staffById(slip.staffId)?.name ?? '', '${slip.present} present', '${slip.halfDays} half · ${slip.paidLeave} paid leave', _staffHref(state, state.staffById(slip.staffId)?.name))];
     case 'late-ot':
-      return [for (final slip in monthSlips) ReportRow(state.staffById(slip.staffId)?.name ?? '', '${slip.lateDays} late', '${slip.overtimeHours.toStringAsFixed(0)} hrs OT')];
+      return [for (final slip in monthSlips) ReportRow(state.staffById(slip.staffId)?.name ?? '', '${slip.lateDays} late', '${slip.overtimeHours.toStringAsFixed(0)} hrs OT', _staffHref(state, state.staffById(slip.staffId)?.name))];
     case 'leave-report':
-      return [for (final leave in state.leaves) ReportRow(state.staffById(leave.staffId)?.name ?? '', leave.status.label, leave.type.label)];
+      return [for (final leave in state.leaves) ReportRow(state.staffById(leave.staffId)?.name ?? '', leave.status.label, leave.type.label, '/leave/${leave.id}')];
     case 'salary-register':
-      return [for (final slip in monthSlips) ReportRow(state.staffById(slip.staffId)?.name ?? '', inr(slip.net), slip.status.label)];
+      return [for (final slip in monthSlips) ReportRow(state.staffById(slip.staffId)?.name ?? '', inr(slip.net), slip.status.label, '/salary/${slip.id}')];
     case 'advances':
-      return [for (final member in state.staff.where((s) => s.advanceBalance > 0)) ReportRow(member.name, inr(member.advanceBalance), 'Still to recover')];
+      return [for (final member in state.staff.where((s) => s.advanceBalance > 0)) ReportRow(member.name, inr(member.advanceBalance), 'Still to recover', '/staff/${member.id}')];
     case 'commission':
-      return [for (final slip in monthSlips) ReportRow(state.staffById(slip.staffId)?.name ?? '', inr(slip.commission), state.shop.commissionEnabled ? '${state.shop.commissionPercent.toStringAsFixed(0)}% rule' : 'Off')];
+      return [for (final slip in monthSlips) ReportRow(state.staffById(slip.staffId)?.name ?? '', inr(slip.commission), state.shop.commissionEnabled ? '${state.shop.commissionPercent.toStringAsFixed(0)}% rule' : 'Off', '/salary/${slip.id}')];
     case 'payslips':
-      return [for (final slip in state.salaries) ReportRow(state.staffById(slip.staffId)?.name ?? '', monthLabel(slip.month), inr(slip.net))];
+      return [for (final slip in state.salaries) ReportRow(state.staffById(slip.staffId)?.name ?? '', monthLabel(slip.month), inr(slip.net), '/salary/${slip.id}')];
     case 'customers':
-      return [for (final customer in state.customers.take(20)) ReportRow(customer.name, customer.phone, '${customer.visits} visits · ${inr(customer.spend)}')];
+      return [for (final customer in state.customers.take(20)) ReportRow(customer.name, customer.phone, '${customer.visits} visits · ${inr(customer.spend)}', '/customers/${customer.id}')];
     case 'new-repeat':
       final fresh = state.customers.where((c) => c.firstVisit != null && sameMonth(c.firstVisit!, shopNow())).length;
       return [
@@ -223,7 +246,7 @@ List<ReportRow> reportRows(String id, CrmState state) {
         ReportRow('Returning', '${state.customers.length - fresh}'),
       ];
     case 'visits':
-      return [for (final bill in state.liveBills.take(12)) ReportRow(bill.customerName, inr(bill.total), bill.lines.map((l) => l.name).join(', '))];
+      return [for (final bill in state.liveBills.take(12)) ReportRow(bill.customerName, inr(bill.total), bill.lines.map((l) => l.name).join(', '), '/bills/${bill.id}')];
     case 'activity':
       return [for (final entry in state.activity.take(20)) ReportRow(entry.actor, entry.action, clock(entry.at))];
     default:

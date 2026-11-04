@@ -16,6 +16,9 @@ import 'package:papa_bear_crm/features/owner/settings/settings_page.dart';
 import 'package:papa_bear_crm/features/owner/staff/staff_detail_page.dart';
 import 'package:papa_bear_crm/features/owner/staff/staff_page.dart';
 import 'package:papa_bear_crm/features/owner/views/money_pages.dart';
+import 'package:papa_bear_crm/features/receptionist/bookings/booking_page.dart';
+import 'package:papa_bear_crm/features/receptionist/leave/leave_detail_page.dart';
+import 'package:papa_bear_crm/features/receptionist/notifications/notification_page.dart';
 import 'package:papa_bear_crm/features/receptionist/attendance/attendance_page.dart';
 import 'package:papa_bear_crm/features/receptionist/billing/bills_page.dart';
 import 'package:papa_bear_crm/features/receptionist/billing/receipt_page.dart';
@@ -77,9 +80,24 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(path: 'dashboard', builder: (context, state) => const DashboardPage()),
               GoRoute(path: 'branches', builder: (context, state) => const BranchesPage()),
               ..._deskRoutes(),
-              GoRoute(path: 'sales', builder: (context, state) => const SalesPage()),
-              GoRoute(path: 'expenses', builder: (context, state) => const ExpensesPage()),
-              GoRoute(path: 'profit', builder: (context, state) => const ProfitPage()),
+              GoRoute(path: 'sales', builder: (context, state) => const SalesPage(), routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) => ReportViewPage(id: state.pathParameters['id']!),
+                ),
+              ]),
+              GoRoute(path: 'expenses', builder: (context, state) => const ExpensesPage(), routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) => ReportViewPage(id: state.pathParameters['id']!),
+                ),
+              ]),
+              GoRoute(path: 'profit', builder: (context, state) => const ProfitPage(), routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) => ProfitPartPage(id: state.pathParameters['id']!),
+                ),
+              ]),
               GoRoute(path: 'staff', builder: (context, state) => const StaffPage(), routes: [
                 GoRoute(
                   path: ':id',
@@ -119,8 +137,18 @@ final routerProvider = Provider<GoRouter>((ref) {
 List<RouteBase> _deskRoutes() {
   return [
     GoRoute(path: 'counter', builder: (context, state) => const CounterPage()),
-    GoRoute(path: 'notifications', builder: (context, state) => const NotificationsPage()),
-    GoRoute(path: 'bookings', builder: (context, state) => const BookingsPage()),
+    GoRoute(path: 'notifications', builder: (context, state) => const NotificationsPage(), routes: [
+      GoRoute(
+        path: ':id',
+        builder: (context, state) => NotificationPage(id: state.pathParameters['id']!),
+      ),
+    ]),
+    GoRoute(path: 'bookings', builder: (context, state) => const BookingsPage(), routes: [
+      GoRoute(
+        path: ':id',
+        builder: (context, state) => BookingPage(id: state.pathParameters['id']!),
+      ),
+    ]),
     GoRoute(path: 'waiting', builder: (context, state) => const WaitingPage()),
     GoRoute(
       path: 'bills',
@@ -140,7 +168,12 @@ List<RouteBase> _deskRoutes() {
       ],
     ),
     GoRoute(path: 'attendance', builder: (context, state) => const AttendancePage()),
-    GoRoute(path: 'leave', builder: (context, state) => const LeavePage()),
+    GoRoute(path: 'leave', builder: (context, state) => const LeavePage(), routes: [
+      GoRoute(
+        path: ':id',
+        builder: (context, state) => LeaveDetailPage(id: state.pathParameters['id']!),
+      ),
+    ]),
     GoRoute(
       path: 'stock',
       builder: (context, state) => const StockPage(),

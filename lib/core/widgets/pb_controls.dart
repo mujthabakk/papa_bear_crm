@@ -136,18 +136,29 @@ class PbChoice extends StatelessWidget {
 }
 
 class PbPill extends StatelessWidget {
-  const PbPill({super.key, required this.label, required this.background, required this.foreground});
+  const PbPill({super.key, required this.label, required this.background, required this.foreground, this.onTap});
 
   final String label;
   final Color background;
   final Color foreground;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final text = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(999)),
       child: Text(label, style: PbText.body(12, weight: FontWeight.w600, color: foreground)),
+    );
+    if (onTap == null) {
+      return DecoratedBox(
+        decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(999)),
+        child: text,
+      );
+    }
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(999), child: text),
     );
   }
 }

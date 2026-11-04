@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:papa_bear_crm/core/navigation/role_path.dart';
 import 'package:papa_bear_crm/core/format/pb_format.dart';
 import 'package:papa_bear_crm/core/theme/pb_colors.dart';
 import 'package:papa_bear_crm/core/theme/pb_theme.dart';
@@ -46,9 +48,7 @@ class LeavePage extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: PbCard(
-              onTap: state.session?.isOwner == true && leave.status == LeaveStatus.pending
-                  ? () => _decide(context, ref, leave)
-                  : null,
+              onTap: () => context.go(rolePath(context, '/leave/${leave.id}')),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -95,39 +95,6 @@ class LeavePage extends ConsumerWidget {
     );
   }
 
-  void _decide(BuildContext context, WidgetRef ref, LeaveRequest leave) {
-    final note = TextEditingController();
-    showPbModal<void>(
-      context: context,
-      kicker: 'Decision',
-      title: ref.read(crmProvider).staffById(leave.staffId)?.name ?? 'Leave',
-      subtitle: leave.reason,
-      child: FormBody(
-        footer: ModalFooter(
-          children: [
-            PbButton(
-              label: 'Reject',
-              primary: false,
-              onPressed: () {
-                ref.read(crmProvider.notifier).decideLeave(leave.id, LeaveStatus.rejected, note.text);
-                Navigator.pop(context);
-              },
-            ),
-            PbButton(
-              label: 'Approve',
-              onPressed: () {
-                ref.read(crmProvider.notifier).decideLeave(leave.id, LeaveStatus.approved, note.text);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-        children: [
-          PbField(label: 'Note for the desk', controller: note, hint: 'Optional'),
-        ],
-      ),
-    );
-  }
 }
 
 class LeaveForm extends ConsumerStatefulWidget {

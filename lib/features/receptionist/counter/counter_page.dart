@@ -36,10 +36,10 @@ class CounterPage extends ConsumerWidget {
               spacing: 12,
               runSpacing: 12,
               children: [
-                SizedBox(width: tile, child: MetricTile(label: 'Cash in hand', value: inr(state.expectedCash), hint: 'Opening ${inr(state.openingCash)}')),
-                SizedBox(width: tile, child: MetricTile(label: 'Sales so far', value: inr(state.todaySales), hint: '${state.todayBills.length} bills')),
-                SizedBox(width: tile, child: MetricTile(label: 'Online bookings', value: '${state.onlineToday}', hint: '${state.walkInToday} walk-in bills')),
-                SizedBox(width: tile, child: MetricTile(label: 'On the floor', value: '${state.presentCount}', hint: '${state.absentCount} absent · ${state.leaveCount} leave')),
+                SizedBox(width: tile, child: MetricTile(label: 'Cash in hand', value: inr(state.expectedCash), hint: 'Opening ${inr(state.openingCash)}', onTap: () => context.go(rolePath(context, '/cash')))),
+                SizedBox(width: tile, child: MetricTile(label: 'Sales so far', value: inr(state.todaySales), hint: '${state.todayBills.length} bills', onTap: () => context.go(rolePath(context, '/bills')))),
+                SizedBox(width: tile, child: MetricTile(label: 'Online bookings', value: '${state.onlineToday}', hint: '${state.walkInToday} walk-in bills', onTap: () => context.go(rolePath(context, '/bookings')))),
+                SizedBox(width: tile, child: MetricTile(label: 'On the floor', value: '${state.presentCount}', hint: '${state.absentCount} absent · ${state.leaveCount} leave', onTap: () => context.go(rolePath(context, '/attendance')))),
               ],
             );
           },
@@ -70,7 +70,7 @@ class CounterPage extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: PbCard(
-                onTap: () => context.go(rolePath(context, '/bookings')),
+                onTap: () => context.go(rolePath(context, '/bookings/${booking.id}')),
                 child: Row(
                   children: [
                     SizedBox(width: 78, child: Text(clock(booking.start), style: PbText.body(14, weight: FontWeight.w700))),
@@ -103,6 +103,7 @@ class CounterPage extends ConsumerWidget {
                   label: '${product.name} · ${product.qty.toStringAsFixed(0)} ${product.unit}',
                   background: PbColors.claySoft,
                   foreground: PbColors.clay,
+                  onTap: () => context.go(rolePath(context, '/stock/${product.id}')),
                 ),
             ],
           ),
