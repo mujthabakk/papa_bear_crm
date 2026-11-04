@@ -666,6 +666,90 @@ class CrmController extends Notifier<CrmState> {
     return null;
   }
 
+  String? createPayroll({
+    required String staffId,
+    required DateTime month,
+    required PayKind kind,
+    required double monthly,
+    required double dailyRate,
+    required double hourlyRate,
+    required double hoursWorked,
+    required int presentDays,
+    required double commissionPercent,
+  }) {
+    if (!(state.session?.isOwner ?? false)) return 'Only the owner can create payroll.';
+    final person = state.staffById(staffId);
+    if (person == null) return 'Pick a staff member.';
+    if ((kind == PayKind.monthly || kind == PayKind.salaryPlusCommission) && monthly <= 0) {
+      return 'Enter the monthly salary.';
+    }
+    if (kind == PayKind.daily && dailyRate <= 0) return 'Enter the daily wage.';
+    if (kind == PayKind.hourly && (hourlyRate <= 0 || hoursWorked < 0)) return 'Enter the hourly rate and hours.';
+    if ((kind == PayKind.salaryPlusCommission || kind == PayKind.commissionOnly) && commissionPercent < 0) {
+      return 'Enter the commission percent.';
+    }
+    final existing = state.salaries.where((slip) => slip.staffId == staffId && sameMonth(slip.month, month)).toList();
+    if (existing.any((slip) => slip.status == SalaryStatus.paid)) {
+      return 'This month is already paid.';
+    }
+    final prior = existing.isEmpty ? null : existing.first;
+    final sales = state.liveBills.fold<double>(0, (sum, bill) {
+      if (!sameMonth(bill.at, month)) return sum;
+      return sum + bill.lines.where((line) => !line.isProduct && line.staffName == person.name).fold(0.0, (lineSum, line) => lineSum + line.amount);
+    });
+    final earnsCommission = kind == PayKind.salaryPlusCommission || kind == PayKind.commissionOnly;
+    final draft = SalaryDraft(
+      id: prior?.id ?? 'sal-$staffId-${month.year}-${month.month}',
+      staffId: staffId,
+      month: DateTime(month.year, month.month),
+      workingDays: state.shop.workingDays,
+      present: kind == PayKind.daily ? presentDays : (prior?.present ?? presentDays),
+      halfDays: prior?.halfDays ?? 0,
+      paidLeave: prior?.paidLeave ?? 0,
+      unpaidLeave: prior?.unpaidLeave ?? 0,
+      lateDays: prior?.lateDays ?? 0,
+      overtimeHours: prior?.overtimeHours ?? 0,
+      overtimeRate: state.shop.overtimeRate,
+      monthlySalary: monthly,
+      commission: earnsCommission ? sales * commissionPercent / 100 : 0,
+      bonus: prior?.bonus ?? 0,
+      bonusReason: prior?.bonusReason,
+      otherDeduction: prior?.otherDeduction ?? 0,
+      deductionReason: prior?.deductionReason,
+      advanceRecovery: prior?.advanceRecovery ?? 0,
+      status: SalaryStatus.unpaid,
+      payKind: kind,
+      dailyRate: dailyRate,
+      hourlyRate: hourlyRate,
+      hoursWorked: hoursWorked,
+      commissionPercent: commissionPercent,
+    );
+    _commit(
+      state.copyWith(
+        staff: [
+          for (final member in state.staff)
+            if (member.id == staffId)
+              member.copyWith(
+                payKind: kind,
+                monthlySalary: monthly,
+                dailyRate: dailyRate,
+                hourlyRate: hourlyRate,
+                commissionPercent: commissionPercent,
+              )
+            else
+              member,
+        ],
+        salaries: [
+          if (prior == null) draft,
+          for (final slip in state.salaries)
+            if (slip.id == prior?.id) draft else slip,
+        ],
+      ),
+      'Payroll for ${person.name}: ${kind.label}',
+    );
+    return null;
+  }
+
   String? addSalaryAdjustment({
     required String salaryId,
     required bool bonus,

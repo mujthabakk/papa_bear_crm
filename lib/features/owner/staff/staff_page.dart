@@ -44,31 +44,51 @@ class _StaffPageState extends ConsumerState<StaffPage> {
           ],
         ),
         const SizedBox(height: 12),
-        for (final member in rows)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: PbCard(
-              onTap: () => context.go(rolePath(context, '/staff/${member.id}')),
-              child: Row(
+        PbSearch(
+          hint: 'Search name, code or role',
+          results: (query) {
+            final visible = rows.where((member) {
+              final haystack = '${member.name} ${member.code} ${member.roleTitle} ${member.payKind.label}'.toLowerCase();
+              return query.isEmpty || haystack.contains(query);
+            }).toList();
+            if (visible.isEmpty) return Text('No staff match that search.', style: PbText.body(14, color: PbColors.muted));
+            return Column(children: [for (final member in visible) _staffCard(context, member)]);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _staffCard(BuildContext context, StaffMember member) {
+    final pay = switch (member.payKind) {
+      PayKind.monthly => '${inr(member.monthlySalary)} / month',
+      PayKind.daily => '${inr(member.dailyRate)} / day',
+      PayKind.hourly => '${inr(member.hourlyRate)} / hour',
+      PayKind.salaryPlusCommission => '${inr(member.monthlySalary)} + ${member.commissionPercent.toStringAsFixed(0)}%',
+      PayKind.commissionOnly => '${member.commissionPercent.toStringAsFixed(0)}% commission',
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: PbCard(
+        onTap: () => context.go(rolePath(context, '/staff/${member.id}')),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${member.name} · ${member.code}', style: PbText.body(15, weight: FontWeight.w700)),
-                        Text(
-                          '${member.roleTitle} · ${inr(member.monthlySalary)} / month · ${member.active ? member.today.label : 'Inactive'}',
-                          style: PbText.body(12.5, color: PbColors.muted),
-                        ),
-                      ],
-                    ),
+                  Text('${member.name} · ${member.code}', style: PbText.body(15, weight: FontWeight.w700)),
+                  Text(
+                    '${member.roleTitle} · ${member.payKind.label} · $pay · ${member.active ? member.today.label : 'Inactive'}',
+                    style: PbText.body(12.5, color: PbColors.muted),
                   ),
-                  const Icon(Icons.arrow_forward_rounded, size: 18),
                 ],
               ),
             ),
-          ),
-      ],
+            const Icon(Icons.arrow_forward_rounded, size: 18),
+          ],
+        ),
+      ),
     );
   }
 

@@ -8,6 +8,16 @@ import 'package:papa_bear_crm/core/widgets/pb_controls.dart';
 import 'package:papa_bear_crm/data/mock/crm_controller.dart';
 import 'package:papa_bear_crm/core/navigation/role_path.dart';
 
+String _payValue(StaffMember member) {
+  return switch (member.payKind) {
+    PayKind.monthly => inr(member.monthlySalary),
+    PayKind.daily => inr(member.dailyRate),
+    PayKind.hourly => inr(member.hourlyRate),
+    PayKind.salaryPlusCommission => inr(member.monthlySalary),
+    PayKind.commissionOnly => '${member.commissionPercent.toStringAsFixed(0)}%',
+  };
+}
+
 class StaffDetailPage extends ConsumerWidget {
   const StaffDetailPage({super.key, required this.id});
 
@@ -35,7 +45,7 @@ class StaffDetailPage extends ConsumerWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
-            SizedBox(width: 180, child: MetricTile(label: 'Monthly salary', value: inr(member.monthlySalary))),
+            SizedBox(width: 220, child: MetricTile(label: member.payKind.label, value: _payValue(member))),
             SizedBox(width: 180, child: MetricTile(label: 'Advance balance', value: inr(member.advanceBalance))),
             SizedBox(width: 180, child: MetricTile(label: 'Hours', value: '${member.startHour}:00–${member.endHour}:00')),
           ],

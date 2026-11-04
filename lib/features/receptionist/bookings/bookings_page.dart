@@ -25,15 +25,33 @@ class BookingsPage extends ConsumerWidget {
         PbButton(label: 'Check availability', onPressed: () => showAvailabilityModal(context)),
       ],
       children: [
-        SizedBox(
+        PbSearch(
+          hint: 'Search customer, phone or stylist',
+          results: (query) {
+            final columns = people.where((member) {
+              if (query.isEmpty) return true;
+              if (member.name.toLowerCase().contains(query)) return true;
+              return state.todayBookings.any(
+                (booking) =>
+                    booking.staffId == member.id &&
+                    (booking.customerName.toLowerCase().contains(query) || booking.phone.contains(digits(query))),
+              );
+            }).toList();
+            if (columns.isEmpty) return Text('No bookings match that search.', style: PbText.body(14, color: PbColors.muted));
+            return SizedBox(
           height: 620,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: people.length,
+            itemCount: columns.length,
             separatorBuilder: (_, _) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
-              final member = people[index];
-              final rows = state.todayBookings.where((b) => b.staffId == member.id).toList();
+              final member = columns[index];
+              final staffHit = query.isEmpty || member.name.toLowerCase().contains(query);
+              final rows = state.todayBookings.where((booking) {
+                if (booking.staffId != member.id) return false;
+                if (staffHit) return true;
+                return booking.customerName.toLowerCase().contains(query) || booking.phone.contains(digits(query));
+              }).toList();
               return SizedBox(
                 width: 280,
                 child: PbCard(
@@ -64,6 +82,8 @@ class BookingsPage extends ConsumerWidget {
               );
             },
           ),
+        );
+          },
         ),
       ],
     );

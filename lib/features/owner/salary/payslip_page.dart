@@ -52,7 +52,8 @@ class PayslipPage extends ConsumerWidget {
                   _pair('Role', member?.roleTitle ?? ''),
                   _pair('Joining', member == null ? '' : '${dayLabel(member.joining)} ${member.joining.year}'),
                   _pair('Payment to', member?.upiMasked ?? ''),
-                  _pair('Monthly salary', inr(slip.monthlySalary)),
+                  _pair('Pay type', slip.payKind.label),
+                  _pair(_baseLabel(slip), inr(slip.basePay)),
                   const Divider(height: 24),
                   Wrap(
                     spacing: 16,
@@ -69,9 +70,10 @@ class PayslipPage extends ConsumerWidget {
                   ),
                   const Divider(height: 24),
                   Text('Earnings', style: PbText.body(13, weight: FontWeight.w700)),
-                  _pair('Monthly salary', inr(slip.monthlySalary)),
+                  _pair(_baseLabel(slip), inr(slip.basePay)),
                   _pair('Overtime', inr(slip.overtimePay)),
-                  if (state.shop.commissionEnabled) _pair('Commission', inr(slip.commission)),
+                  if (slip.commission > 0 || slip.payKind == PayKind.commissionOnly || slip.payKind == PayKind.salaryPlusCommission)
+                    _pair('Commission${slip.commissionPercent == 0 ? '' : ' · ${slip.commissionPercent.toStringAsFixed(0)}%'}', inr(slip.commission)),
                   _pair('Bonus${slip.bonusReason == null ? '' : ' · ${slip.bonusReason}'}', inr(slip.bonus)),
                   const SizedBox(height: 8),
                   Text('Deductions', style: PbText.body(13, weight: FontWeight.w700)),
@@ -154,6 +156,16 @@ class PayslipPage extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  String _baseLabel(SalaryDraft slip) {
+    return switch (slip.payKind) {
+      PayKind.monthly => 'Monthly salary',
+      PayKind.daily => 'Daily wage · ${slip.payableDays.toStringAsFixed(slip.payableDays == slip.payableDays.roundToDouble() ? 0 : 1)} days',
+      PayKind.hourly => 'Hourly · ${slip.hoursWorked.toStringAsFixed(0)} hrs',
+      PayKind.salaryPlusCommission => 'Monthly salary',
+      PayKind.commissionOnly => 'Base pay',
+    };
   }
 
   Widget _pair(String label, String value) {

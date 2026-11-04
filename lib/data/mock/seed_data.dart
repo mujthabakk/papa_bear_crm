@@ -31,6 +31,10 @@ CrmState buildSeed() {
     int? inHour,
     int? inMinute,
     bool late = false,
+    PayKind payKind = PayKind.monthly,
+    double dailyRate = 0,
+    double hourlyRate = 0,
+    double commissionPercent = 0,
   }) {
     return StaffMember(
       id: id,
@@ -49,6 +53,10 @@ CrmState buildSeed() {
       advanceBalance: advance,
       checkIn: inHour == null ? null : at(0, inHour, inMinute ?? 0),
       late: late,
+      payKind: payKind,
+      dailyRate: dailyRate,
+      hourlyRate: hourlyRate,
+      commissionPercent: commissionPercent,
     );
   }
 
@@ -67,6 +75,8 @@ CrmState buildSeed() {
       advance: 2000,
       inHour: 9,
       inMinute: 52,
+      payKind: PayKind.salaryPlusCommission,
+      commissionPercent: 10,
     ),
     member(
       id: 'st2',
@@ -126,6 +136,8 @@ CrmState buildSeed() {
       today: AttendanceMark.present,
       inHour: 9,
       inMinute: 55,
+      payKind: PayKind.hourly,
+      hourlyRate: 80,
     ),
     member(
       id: 'st6',
@@ -140,6 +152,8 @@ CrmState buildSeed() {
       today: AttendanceMark.present,
       inHour: 9,
       inMinute: 35,
+      payKind: PayKind.daily,
+      dailyRate: 450,
     ),
     member(
       id: 'st7',
@@ -164,6 +178,8 @@ CrmState buildSeed() {
       upi: 'UPI ****7781',
       skills: const ['Beard trim'],
       today: AttendanceMark.absent,
+      payKind: PayKind.commissionOnly,
+      commissionPercent: 20,
     ),
     StaffMember(
       id: 'st9',
@@ -451,6 +467,11 @@ CrmState buildSeed() {
       overtimeRate: 100,
       monthlySalary: person.monthlySalary,
       commission: commission,
+      payKind: person.payKind,
+      dailyRate: person.dailyRate,
+      hourlyRate: person.hourlyRate,
+      hoursWorked: person.payKind == PayKind.hourly ? (present + halfDays * 0.5) * 8 + ot : 0,
+      commissionPercent: person.commissionPercent,
       bonus: bonus,
       bonusReason: bonusReason,
       otherDeduction: other,
@@ -494,7 +515,13 @@ CrmState buildSeed() {
         present: 25,
         paidLeave: 1,
         lateDays: person.late ? 3 : 0,
-        commission: person.roleTitle == 'Helper' ? 0 : 800,
+        commission: person.payKind == PayKind.commissionOnly
+            ? 1600
+            : person.payKind == PayKind.salaryPlusCommission
+            ? 800
+            : person.roleTitle == 'Helper'
+            ? 0
+            : 800,
         status: SalaryStatus.paid,
         paidMode: 'Bank',
         paidOn: DateTime(now.year, now.month, 1),
@@ -507,7 +534,13 @@ CrmState buildSeed() {
         month: current,
         present: person.today == AttendanceMark.present ? 2 : 1,
         unpaidLeave: person.today == AttendanceMark.absent ? 1 : 0,
-        commission: person.roleTitle == 'Helper' ? 0 : 300,
+        commission: person.payKind == PayKind.commissionOnly
+            ? 600
+            : person.payKind == PayKind.salaryPlusCommission
+            ? 300
+            : person.roleTitle == 'Helper'
+            ? 0
+            : 300,
       ),
     );
   }

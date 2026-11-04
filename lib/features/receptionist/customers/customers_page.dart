@@ -8,39 +8,25 @@ import 'package:papa_bear_crm/core/widgets/pb_controls.dart';
 import 'package:papa_bear_crm/data/mock/crm_controller.dart';
 import 'package:papa_bear_crm/core/navigation/role_path.dart';
 
-class CustomersPage extends ConsumerStatefulWidget {
+class CustomersPage extends ConsumerWidget {
   const CustomersPage({super.key});
 
   @override
-  ConsumerState<CustomersPage> createState() => _CustomersPageState();
-}
-
-class _CustomersPageState extends ConsumerState<CustomersPage> {
-  final _query = TextEditingController();
-
-  @override
-  void dispose() {
-    _query.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final customers = ref.watch(crmProvider.select((state) => state.customers));
-    final q = _query.text.trim().toLowerCase();
-    final rows = customers.where((c) => q.isEmpty || c.name.toLowerCase().contains(q) || c.phone.contains(digits(q))).toList();
     return PbPage(
       kicker: 'People who visit',
       title: 'Customers',
       subtitle: 'Search by name or phone. Repeat visits fill in on the next bill.',
       children: [
-        TextField(
-          controller: _query,
-          onChanged: (_) => setState(() {}),
-          decoration: const InputDecoration(hintText: 'Search name or phone'),
-        ),
-        const SizedBox(height: 12),
-        for (final customer in rows)
+        PbSearch(
+          hint: 'Search name or phone',
+          results: (query) {
+            final rows = customers.where((customer) => query.isEmpty || customer.name.toLowerCase().contains(query) || customer.phone.contains(digits(query))).toList();
+            if (rows.isEmpty) return Text('No customers match that search.', style: PbText.body(14, color: PbColors.muted));
+            return Column(
+              children: [
+                for (final customer in rows)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: PbCard(
@@ -64,6 +50,10 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
               ),
             ),
           ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }

@@ -97,6 +97,10 @@ class StaffMember {
     this.checkOut,
     this.late = false,
     this.overtimeHours = 0,
+    this.payKind = PayKind.monthly,
+    this.dailyRate = 0,
+    this.hourlyRate = 0,
+    this.commissionPercent = 0,
   });
 
   final String id;
@@ -117,6 +121,10 @@ class StaffMember {
   final DateTime? checkOut;
   final bool late;
   final double overtimeHours;
+  final PayKind payKind;
+  final double dailyRate;
+  final double hourlyRate;
+  final double commissionPercent;
 
   StaffMember copyWith({
     String? name,
@@ -134,6 +142,10 @@ class StaffMember {
     DateTime? checkOut,
     bool? late,
     double? overtimeHours,
+    PayKind? payKind,
+    double? dailyRate,
+    double? hourlyRate,
+    double? commissionPercent,
     bool clearCheckIn = false,
     bool clearCheckOut = false,
   }) {
@@ -156,6 +168,10 @@ class StaffMember {
       checkOut: clearCheckOut ? null : (checkOut ?? this.checkOut),
       late: late ?? this.late,
       overtimeHours: overtimeHours ?? this.overtimeHours,
+      payKind: payKind ?? this.payKind,
+      dailyRate: dailyRate ?? this.dailyRate,
+      hourlyRate: hourlyRate ?? this.hourlyRate,
+      commissionPercent: commissionPercent ?? this.commissionPercent,
     );
   }
 }
@@ -719,6 +735,11 @@ class SalaryDraft {
     required this.bonus,
     required this.advanceRecovery,
     required this.status,
+    this.payKind = PayKind.monthly,
+    this.dailyRate = 0,
+    this.hourlyRate = 0,
+    this.hoursWorked = 0,
+    this.commissionPercent = 0,
     this.bonusReason,
     this.otherDeduction = 0,
     this.deductionReason,
@@ -740,6 +761,11 @@ class SalaryDraft {
   final double overtimeRate;
   final double monthlySalary;
   final double commission;
+  final PayKind payKind;
+  final double dailyRate;
+  final double hourlyRate;
+  final double hoursWorked;
+  final double commissionPercent;
   final double bonus;
   final String? bonusReason;
   final double otherDeduction;
@@ -752,9 +778,17 @@ class SalaryDraft {
 
   double get perDay => workingDays == 0 ? 0 : monthlySalary / workingDays;
   double get unpaidDays => unpaidLeave + (halfDays * 0.5);
-  double get unpaidDeduction => unpaidDays * perDay;
+  double get payableDays => present + (halfDays * 0.5);
+  bool get _keepsMonthlyBase => payKind == PayKind.monthly || payKind == PayKind.salaryPlusCommission;
+  double get basePay => switch (payKind) {
+    PayKind.monthly || PayKind.salaryPlusCommission => monthlySalary,
+    PayKind.daily => dailyRate * payableDays,
+    PayKind.hourly => hourlyRate * hoursWorked,
+    PayKind.commissionOnly => 0,
+  };
+  double get unpaidDeduction => _keepsMonthlyBase ? unpaidDays * perDay : 0;
   double get overtimePay => overtimeHours * overtimeRate;
-  double get gross => monthlySalary + overtimePay + commission + bonus;
+  double get gross => basePay + overtimePay + commission + bonus;
   double get deductions => unpaidDeduction + advanceRecovery + otherDeduction;
   double get net => gross - deductions;
 
@@ -784,6 +818,11 @@ class SalaryDraft {
       overtimeRate: overtimeRate,
       monthlySalary: monthlySalary,
       commission: commission ?? this.commission,
+      payKind: payKind,
+      dailyRate: dailyRate,
+      hourlyRate: hourlyRate,
+      hoursWorked: hoursWorked,
+      commissionPercent: commissionPercent,
       bonus: bonus ?? this.bonus,
       bonusReason: bonusReason ?? this.bonusReason,
       otherDeduction: otherDeduction ?? this.otherDeduction,

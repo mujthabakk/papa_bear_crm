@@ -18,10 +18,19 @@ class WaitingPage extends ConsumerWidget {
       title: 'Waiting list',
       subtitle: 'Seat them when a stylist opens up. The expected wait is a guide, not a promise.',
       children: [
-        if (waiting.isEmpty)
-          Text('The bench is empty.', style: PbText.body(15, color: PbColors.muted))
-        else
-          for (final entry in waiting)
+        PbSearch(
+          hint: 'Search name, phone or service',
+          results: (query) {
+            final visible = waiting.where((entry) {
+              final haystack = '${entry.name} ${entry.phone} ${entry.serviceName}'.toLowerCase();
+              return query.isEmpty || haystack.contains(query) || entry.phone.contains(digits(query));
+            }).toList();
+            if (visible.isEmpty) {
+              return Text(waiting.isEmpty ? 'The bench is empty.' : 'No one matches that search.', style: PbText.body(15, color: PbColors.muted));
+            }
+            return Column(
+              children: [
+                for (final entry in visible)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: PbCard(
@@ -56,6 +65,10 @@ class WaitingPage extends ConsumerWidget {
                 ),
               ),
             ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }

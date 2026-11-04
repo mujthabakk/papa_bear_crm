@@ -46,7 +46,15 @@ class StockPage extends ConsumerWidget {
         PbButton(label: 'Stock out', primary: false, onPressed: () => showStockOutModal(context)),
       ],
       children: [
-        LayoutBuilder(
+        PbSearch(
+          hint: 'Search product, brand or category',
+          results: (query) {
+            final visible = products.where((product) {
+              final haystack = '${product.name} ${product.brand} ${product.category}'.toLowerCase();
+              return query.isEmpty || haystack.contains(query);
+            }).toList();
+            if (visible.isEmpty) return Text('No products match that search.', style: PbText.body(14, color: PbColors.muted));
+            return LayoutBuilder(
           builder: (context, constraints) {
             final columns = constraints.maxWidth > 900 ? 3 : constraints.maxWidth > 560 ? 2 : 1;
             final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
@@ -54,7 +62,7 @@ class StockPage extends ConsumerWidget {
               spacing: 12,
               runSpacing: 12,
               children: [
-                for (final product in products)
+                for (final product in visible)
                   SizedBox(
                     width: width,
                     child: PbCard(
@@ -82,6 +90,8 @@ class StockPage extends ConsumerWidget {
                   ),
               ],
             );
+          },
+        );
           },
         ),
       ],

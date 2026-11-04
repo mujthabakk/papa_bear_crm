@@ -297,6 +297,47 @@ class ModalFooter extends StatelessWidget {
   }
 }
 
+class PbSearch extends StatefulWidget {
+  const PbSearch({super.key, required this.hint, required this.results});
+
+  final String hint;
+  final Widget Function(String query) results;
+
+  @override
+  State<PbSearch> createState() => _PbSearchState();
+}
+
+class _PbSearchState extends State<PbSearch> {
+  final _query = TextEditingController();
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = _query.text.trim().toLowerCase();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _query,
+          onChanged: (_) => setState(() {}),
+          style: PbText.body(15),
+          decoration: InputDecoration(
+            hintText: widget.hint,
+            prefixIcon: const Icon(Icons.search_rounded, size: 20),
+          ),
+        ),
+        const SizedBox(height: 12),
+        widget.results(query),
+      ],
+    );
+  }
+}
+
 class FormBody extends StatelessWidget {
   const FormBody({super.key, required this.children, this.footer});
 

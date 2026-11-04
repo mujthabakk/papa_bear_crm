@@ -18,6 +18,8 @@ enum StockReason { purchase, sold, used, damaged, expired, correction }
 
 enum SalaryStatus { unpaid, paid }
 
+enum PayKind { monthly, daily, hourly, salaryPlusCommission, commissionOnly }
+
 extension UserRoleX on UserRole {
   String get label => switch (this) {
     UserRole.owner => 'Owner / Manager',
@@ -100,5 +102,15 @@ extension SalaryStatusX on SalaryStatus {
   String get label => switch (this) {
     SalaryStatus.unpaid => 'Unpaid',
     SalaryStatus.paid => 'Paid',
+  };
+}
+
+extension PayKindX on PayKind {
+  String get label => switch (this) {
+    PayKind.monthly => 'Monthly salary',
+    PayKind.daily => 'Daily wage',
+    PayKind.hourly => 'Hourly pay',
+    PayKind.salaryPlusCommission => 'Salary + commission',
+    PayKind.commissionOnly => 'Commission only',
   };
 }

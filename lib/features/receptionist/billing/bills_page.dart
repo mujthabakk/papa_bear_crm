@@ -26,7 +26,17 @@ class BillsPage extends ConsumerWidget {
         PbButton(label: 'New bill', icon: Icons.add_rounded, onPressed: () => showBillModal(context)),
       ],
       children: [
-        for (final bill in bills)
+        PbSearch(
+          hint: 'Search bill, customer or phone',
+          results: (query) {
+            final visible = bills.where((bill) {
+              final haystack = '${bill.number} ${bill.customerName} ${bill.phone}'.toLowerCase();
+              return query.isEmpty || haystack.contains(query) || bill.phone.contains(digits(query));
+            }).toList();
+            if (visible.isEmpty) return Text('No bills match that search.', style: PbText.body(14, color: PbColors.muted));
+            return Column(
+              children: [
+                for (final bill in visible)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: PbCard(
@@ -59,6 +69,10 @@ class BillsPage extends ConsumerWidget {
               ),
             ),
           ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }

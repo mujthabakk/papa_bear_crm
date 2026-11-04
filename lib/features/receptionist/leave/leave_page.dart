@@ -32,7 +32,17 @@ class LeavePage extends ConsumerWidget {
         PbButton(label: 'New request', onPressed: () => showLeaveModal(context)),
       ],
       children: [
-        for (final leave in state.leaves)
+        PbSearch(
+          hint: 'Search staff or reason',
+          results: (query) {
+            final visible = state.leaves.where((leave) {
+              final name = state.staffById(leave.staffId)?.name.toLowerCase() ?? '';
+              return query.isEmpty || name.contains(query) || leave.reason.toLowerCase().contains(query) || leave.type.label.toLowerCase().contains(query);
+            }).toList();
+            if (visible.isEmpty) return Text('No leave matches that search.', style: PbText.body(14, color: PbColors.muted));
+            return Column(
+              children: [
+                for (final leave in visible)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: PbCard(
@@ -77,6 +87,10 @@ class LeavePage extends ConsumerWidget {
               ),
             ),
           ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }
